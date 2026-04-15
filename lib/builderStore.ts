@@ -32,13 +32,48 @@ const defaultState: BuilderState = {
   ],
 };
 
+function isValidPaperQuestion(q: unknown): q is PaperQuestion {
+  if (!q || typeof q !== "object") return false;
+  const { id, sourceId, text, marks, topic, sourceInfo } = q as Record<string, unknown>;
+  return (
+    typeof id === "string" &&
+    typeof sourceId === "string" &&
+    typeof text === "string" &&
+    typeof marks === "number" && isFinite(marks) && marks >= 0 && marks <= 100 &&
+    typeof topic === "string" &&
+    typeof sourceInfo === "string"
+  );
+}
+
+function isValidBuilderState(data: unknown): data is BuilderState {
+  if (!data || typeof data !== "object") return false;
+  const { paperTitle, sections } = data as Record<string, unknown>;
+  if (typeof paperTitle !== "string") return false;
+  if (!Array.isArray(sections)) return false;
+  return sections.every((s: unknown) => {
+    if (!s || typeof s !== "object") return false;
+    const { id, title, questions } = s as Record<string, unknown>;
+    return (
+      typeof id === "string" &&
+      typeof title === "string" &&
+      Array.isArray(questions) &&
+      questions.every(isValidPaperQuestion)
+    );
+  });
+}
+
 export function loadBuilderState(): BuilderState {
   if (typeof window === "undefined") return defaultState;
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) return JSON.parse(stored) as BuilderState;
+    if (stored) {
+      const parsed: unknown = JSON.parse(stored);
+      if (isValidBuilderState(parsed)) return parsed;
+      // Invalid shape — clear corrupted/tampered entry
+      localStorage.removeItem(STORAGE_KEY);
+    }
   } catch {
-    // corrupted storage, fall through
+    // corrupted JSON, fall through
   }
   return defaultState;
 }

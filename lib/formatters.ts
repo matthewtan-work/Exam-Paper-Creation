@@ -350,12 +350,15 @@ export function formatScienceOpen(raw: string): string {
 }
 
 // Simple heuristic to estimate marks based on directive verb complexity
+// Uses startsWith checks instead of regex alternation to avoid ReDoS risk
 function estimateMarks(text: string): number {
   const lower = text.toLowerCase();
-  if (/^(define|state|name|identify|give)/.test(lower)) return 1;
-  if (/^(describe|explain|outline)/.test(lower)) return 2;
-  if (/^(discuss|compare|contrast|evaluate|assess|justify)/.test(lower)) return 3;
-  if (/^(calculate|determine)/.test(lower)) return 2;
+  const oneMarkVerbs = ["define", "state", "name", "identify", "give"];
+  const twoMarkVerbs = ["describe", "explain", "outline", "calculate", "determine"];
+  const threeMarkVerbs = ["discuss", "compare", "contrast", "evaluate", "assess", "justify"];
+  if (oneMarkVerbs.some((v) => lower.startsWith(v))) return 1;
+  if (threeMarkVerbs.some((v) => lower.startsWith(v))) return 3;
+  if (twoMarkVerbs.some((v) => lower.startsWith(v))) return 2;
   if (text.length > 120) return 3;
   return 2;
 }

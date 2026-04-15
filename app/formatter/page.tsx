@@ -14,36 +14,57 @@ async function extractDocx(file: File): Promise<string> {
   return result.value.trim();
 }
 
+// Magic byte signatures for file type validation
+const MAGIC = {
+  pdf:  [0x25, 0x50, 0x44, 0x46],        // %PDF
+  docx: [0x50, 0x4B, 0x03, 0x04],        // PK (ZIP/OOXML)
+};
+
+function checkMagicBytes(bytes: Uint8Array, expected: number[]): boolean {
+  return expected.every((b, i) => bytes[i] === b);
+}
+
 async function extractPdf(file: File): Promise<string> {
-  // Basic client-side PDF text extraction:
-  // Read as binary, pull printable ASCII strings from PDF content streams.
-  // Works for text-based PDFs (e.g. exported from Word/Pages).
-  // For scanned/image PDFs, returns a fallback message.
   const buffer = await file.arrayBuffer();
   const bytes = new Uint8Array(buffer);
 
-  // Convert to Latin-1 string to preserve byte values
-  let raw = "";
-  for (let i = 0; i < bytes.length; i++) {
-    raw += String.fromCharCode(bytes[i]);
+  // Validate magic bytes — reject non-PDF content regardless of file extension
+  if (!checkMagicBytes(bytes, MAGIC.pdf)) {
+    return "[File rejected: not a valid PDF (magic bytes mismatch). Please upload a genuine PDF file.]";
   }
 
-  // Extract text from PDF string objects (parenthesised literals)
-  // and BT...ET text blocks
+  // Cap input size to 5 MB to prevent runaway processing
+  const MAX_BYTES = 5 * 1024 * 1024;
+  const slice = bytes.subarray(0, MAX_BYTES);
+
+  let raw = "";
+  for (let i = 0; i < slice.length; i++) {
+    raw += String.fromCharCode(slice[i]);
+  }
+
   const extracted: string[] = [];
 
-  // Method 1: text in BT/ET blocks via Tj / TJ operators
-  const btBlocks = raw.match(/BT[\s\S]*?ET/g) ?? [];
-  for (const block of btBlocks) {
-    const strMatches = block.match(/\(([^)]{1,200})\)\s*Tj/g) ?? [];
-    for (const m of strMatches) {
-      const text = m.replace(/^\(/, "").replace(/\)\s*Tj$/, "").trim();
+  // Split on BT/ET boundaries manually to avoid [\s\S]*? ReDoS on adversarial input
+  let pos = 0;
+  while (pos < raw.length) {
+    const btIdx = raw.indexOf("BT", pos);
+    if (btIdx === -1) break;
+    const etIdx = raw.indexOf("ET", btIdx + 2);
+    if (etIdx === -1) break;
+    // Guard: skip implausibly large blocks (> 4 KB) — avoids backtracking on malformed PDFs
+    if (etIdx - btIdx > 4096) { pos = btIdx + 2; continue; }
+    const block = raw.slice(btIdx, etIdx + 2);
+    // Extract Tj string literals — fixed-width inner pattern, no alternation
+    const tjRe = /\(([^)]{1,200})\)\s*Tj/g;
+    let m: RegExpExecArray | null;
+    while ((m = tjRe.exec(block)) !== null) {
+      const text = m[1].trim();
       if (text.length > 1 && /[a-zA-Z]/.test(text)) extracted.push(text);
     }
+    pos = etIdx + 2;
   }
 
   const result = extracted.join(" ").replace(/\s+/g, " ").trim();
-
   if (result.length < 20) {
     return (
       "[Could not extract text from this PDF — it may be image-based or encrypted.\n" +
@@ -55,15 +76,25 @@ async function extractPdf(file: File): Promise<string> {
 
 async function readUploadedFile(file: File): Promise<string> {
   const name = file.name.toLowerCase();
-  if (name.endsWith(".docx")) return extractDocx(file);
+
+  // Enforce 10 MB file size limit regardless of type
+  const MAX_SIZE = 10 * 1024 * 1024;
+  if (file.size > MAX_SIZE) {
+    return "[File too large — please upload a file under 10 MB.]";
+  }
+
+  if (name.endsWith(".docx")) {
+    // Validate DOCX magic bytes (ZIP/OOXML)
+    const header = new Uint8Array(await file.slice(0, 4).arrayBuffer());
+    if (!checkMagicBytes(header, MAGIC.docx)) {
+      return "[File rejected: not a valid DOCX file. Please upload a genuine Word document.]";
+    }
+    return extractDocx(file);
+  }
+
   if (name.endsWith(".pdf")) return extractPdf(file);
-  // Fallback for any text-based file
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => resolve(e.target?.result as string ?? "");
-    reader.onerror = reject;
-    reader.readAsText(file);
-  });
+
+  return "[Unsupported file type. Please upload a .pdf or .docx file.]";
 }
 
 // ─── Ideal Format panel ───────────────────────────────────────────────────────
