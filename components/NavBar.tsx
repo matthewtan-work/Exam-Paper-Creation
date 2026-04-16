@@ -5,9 +5,8 @@ import { usePathname } from "next/navigation";
 
 const links = [
   { href: "/", label: "Home" },
-  { href: "/chemistry", label: "Chemistry Search" },
-  { href: "/chemistry/builder", label: "Paper Builder" },
-  { href: "/formatter", label: "Exam Formatter" },
+  { href: "/chemistry", label: "Chemistry" },
+  { href: "/history", label: "History" },
 ];
 
 export default function NavBar() {

@@ -3,10 +3,9 @@ import Link from "next/link";
 const products = [
   {
     href: "/chemistry",
-    label: "Chemistry Search + Paper Builder",
+    label: "Chemistry Question Search + Paper Creation",
     tagline: "Product A",
-    description:
-      "Search 30+ past-year chemistry questions by topic, type, and difficulty. Add questions to a draft paper, edit inline, reorder, and preview the formatted exam — all in one workspace.",
+    description: "Search for inspiration from questions for all schools.",
     cta: "Open Chemistry Tools",
     accent: "indigo",
     features: [
@@ -23,23 +22,22 @@ const products = [
     ),
   },
   {
-    href: "/formatter",
-    label: "Universal Exam Formatter",
+    href: "/history",
+    label: "History Question Search + Paper Creation",
     tagline: "Product B",
-    description:
-      "Paste unstructured or AI-generated text, pick a question format template, and instantly get a clean, exam-ready output. Works across all subjects.",
-    cta: "Open Formatter",
+    description: "Search for inspiration from questions for all schools.",
+    cta: "Open History Tools",
     accent: "violet",
     features: [
-      "4 format templates",
-      "Rules-based formatter",
-      "Structured Question",
-      "Essay & Source-Based",
-      "Science Open-Ended",
+      "Question bank — O & A Level",
+      "Inquiry-based retrieval",
+      "Source-Based Question support",
+      "AI question generation",
+      "Answer guide with mark schemes",
     ],
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.966 8.966 0 00-6 2.292m0-14.25v14.25" />
       </svg>
     ),
   },
