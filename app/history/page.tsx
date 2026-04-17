@@ -1,15 +1,19 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { HistoryQuestion, HistoryLevel, HistoryQuestionType } from "@/data/historyQuestions";
+import { HistoryQuestion } from "@/data/historyQuestions";
+import type { HistoryPaper, HistoryUnit } from "@/data/syllabusHistory";
+import {
+  PAPER_1_UNITS,
+  PAPER_2_UNITS,
+  SBQ_ELIGIBLE_PAPER_1,
+  SBQ_ELIGIBLE_PAPER_2,
+} from "@/data/syllabusHistory";
 import {
   searchHistoryQuestions,
-  retrieveByInquiry,
   defaultHistoryFilters,
-  allHistoryTopics,
-  allHistoryLevels,
-  allHistoryPeriods,
-  allHistoryQuestionTypes,
+  allHistoryPapers,
+  allHistoryUnits,
   HistorySearchFilters,
 } from "@/lib/historySearch";
 import { generateHistoryQuestion, generateAnswerGuide, AnswerGuide } from "@/lib/historyGeneration";
@@ -17,12 +21,14 @@ import HistoryQuestionCard from "@/components/HistoryQuestionCard";
 
 type Tab = "bank" | "draft" | "answers";
 
+const paperDescriptions: Record<string, string> = {
+  "All": "All Papers",
+  "Paper 1": "Paper 1 — European Control in SEA, 1870s–1942",
+  "Paper 2": "Paper 2 — Cold War & Decolonisation, 1940s–1991",
+};
+
 export default function HistoryPage() {
   const [tab, setTab] = useState<Tab>("bank");
-  const [inquiry, setInquiry] = useState("");
-  const [inquiryResults, setInquiryResults] = useState<HistoryQuestion[] | null>(null);
-  const [isSearching, setIsSearching] = useState(false);
-
   const [filters, setFilters] = useState<HistorySearchFilters>(defaultHistoryFilters);
   const [showAnswers, setShowAnswers] = useState(false);
 
@@ -33,23 +39,26 @@ export default function HistoryPage() {
   const [generatingAnswers, setGeneratingAnswers] = useState(false);
 
   // Generation panel
-  const [genTopic, setGenTopic] = useState("World War II");
-  const [genLevel, setGenLevel] = useState<HistoryLevel>("O Level");
-  const [genType, setGenType] = useState<HistoryQuestionType>("Structured Essay");
+  const [genPaper, setGenPaper] = useState<HistoryPaper>("Paper 1");
+  const [genUnit, setGenUnit] = useState<HistoryUnit>("Nazi Germany");
+  const [genType, setGenType] = useState<"Essay" | "SBQ">("Essay");
 
-  // ── Search / Inquiry ──────────────────────────────────────────────────────
-  const handleInquirySearch = useCallback(async () => {
-    if (!inquiry.trim()) return;
-    setIsSearching(true);
-    setInquiryResults(null);
-    await new Promise((r) => setTimeout(r, 700));
-    const results = retrieveByInquiry(inquiry);
-    setInquiryResults(results);
-    setIsSearching(false);
-  }, [inquiry]);
+  // ── Computed ──────────────────────────────────────────────────────────────
+  const displayedQuestions = searchHistoryQuestions(filters);
 
-  const filteredQuestions = searchHistoryQuestions(filters);
-  const displayedQuestions = inquiryResults ?? filteredQuestions;
+  const unitsForPaper = filters.paper === "Paper 1"
+    ? PAPER_1_UNITS
+    : filters.paper === "Paper 2"
+    ? PAPER_2_UNITS
+    : [...PAPER_1_UNITS, ...PAPER_2_UNITS];
+
+  const sbqEligibleUnits =
+    genPaper === "Paper 1" ? SBQ_ELIGIBLE_PAPER_1 : SBQ_ELIGIBLE_PAPER_2;
+
+  const genUnits =
+    genPaper === "Paper 1"
+      ? [...PAPER_1_UNITS]
+      : [...PAPER_2_UNITS];
 
   // ── Draft paper management ─────────────────────────────────────────────────
   const addToDraft = useCallback((q: HistoryQuestion) => {
@@ -84,7 +93,7 @@ export default function HistoryPage() {
 
   // ── Generate question ──────────────────────────────────────────────────────
   const handleGenerate = () => {
-    const q = generateHistoryQuestion(genTopic, genLevel, genType);
+    const q = generateHistoryQuestion(genUnit, genPaper, genType);
     addToDraft(q);
     setTab("draft");
   };
@@ -99,70 +108,73 @@ export default function HistoryPage() {
     setGeneratingAnswers(false);
   };
 
-  // ── Print / export ─────────────────────────────────────────────────────────
   const handlePrint = () => window.print();
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* ── Page Header ─────────────────────────────────────────────── */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-xl bg-violet-600 flex items-center justify-center">
+      <div className="mb-6">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="w-9 h-9 rounded-xl bg-violet-600 flex items-center justify-center shrink-0">
             <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.966 8.966 0 00-6 2.292m0-14.25v14.25" />
             </svg>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 leading-tight">History Exam Paper Builder</h1>
-            <p className="text-sm text-slate-500">Search past questions, generate new ones, build a draft paper and produce an answer guide.</p>
+            <h1 className="text-2xl font-bold text-slate-900 leading-tight">History Question Search</h1>
+            <p className="text-sm text-slate-500">SEAB 2174 · Paper 1 &amp; Paper 2 · Section A (SBQ) &amp; Section B (Essay)</p>
           </div>
         </div>
+      </div>
 
-        {/* Inquiry bar */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Topic / Inquiry Input</p>
-          <div className="flex gap-2">
-            <input
-              value={inquiry}
-              onChange={(e) => setInquiry(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleInquirySearch()}
-              placeholder="e.g. 'Why did appeasement fail?' or 'Cold War source-based O Level'…"
-              className="flex-1 px-4 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-300 focus:border-violet-400 bg-slate-50"
-            />
-            <button
-              onClick={handleInquirySearch}
-              disabled={isSearching || !inquiry.trim()}
-              className="px-5 py-2.5 bg-violet-600 text-white text-sm font-semibold rounded-xl hover:bg-violet-700 disabled:opacity-50 transition-colors flex items-center gap-2"
-            >
-              {isSearching ? (
-                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" />
-                </svg>
-              )}
-              {isSearching ? "Searching…" : "Find Questions"}
-            </button>
-            {inquiryResults && (
+      {/* ── Paper tabs ───────────────────────────────────────────────── */}
+      <div className="border-b border-slate-200 mb-0">
+        <div className="flex gap-0 overflow-x-auto">
+          {allHistoryPapers.map((paper) => {
+            const isActive = filters.paper === paper;
+            return (
               <button
-                onClick={() => { setInquiryResults(null); setInquiry(""); }}
-                className="px-3 py-2.5 text-sm text-slate-500 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors"
+                key={paper}
+                onClick={() => setFilters({ ...defaultHistoryFilters, paper })}
+                className={`px-5 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                  isActive
+                    ? "border-violet-600 text-violet-700"
+                    : "border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300"
+                }`}
               >
-                Clear
+                {paperDescriptions[paper] ?? paper}
               </button>
-            )}
-          </div>
-          {inquiryResults !== null && (
-            <p className="text-xs text-slate-400 mt-2">
-              {inquiryResults.length === 0
-                ? "No matching questions found — try different keywords or browse below."
-                : `${inquiryResults.length} question${inquiryResults.length !== 1 ? "s" : ""} matched your inquiry`}
-            </p>
-          )}
+            );
+          })}
         </div>
+      </div>
+
+      {/* ── Section sub-tabs ─────────────────────────────────────────── */}
+      <div className="flex items-center gap-2 py-3 border-b border-slate-100 mb-4">
+        {["All", "Section A", "Section B"].map((sec) => (
+          <button
+            key={sec}
+            onClick={() => setFilters((f) => ({ ...f, section: sec }))}
+            className={`px-4 py-1.5 text-xs font-semibold rounded-full border transition-colors ${
+              filters.section === sec
+                ? "bg-violet-600 text-white border-violet-600"
+                : "bg-white text-slate-600 border-slate-200 hover:border-violet-300"
+            }`}
+          >
+            {sec === "All"
+              ? "All Sections"
+              : sec === "Section A"
+              ? "Section A — SBQ"
+              : "Section B — Essay"}
+          </button>
+        ))}
+        <span className="ml-auto text-xs text-slate-400 hidden sm:block">
+          {filters.section === "Section A"
+            ? "Source-Based Case Study — starred (*) units only"
+            : filters.section === "Section B"
+            ? "Essay Questions — 10 marks each, answer 2 of 3"
+            : ""}
+        </span>
       </div>
 
       {/* ── Tab bar ──────────────────────────────────────────────────── */}
@@ -222,62 +234,60 @@ export default function HistoryPage() {
         <div className="flex gap-6">
           {/* Filter sidebar */}
           <aside className="w-56 shrink-0 space-y-5">
-            {/* Filters header */}
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Filters</p>
               <button
-                onClick={() => setFilters(defaultHistoryFilters)}
+                onClick={() => setFilters((f) => ({ ...defaultHistoryFilters, paper: f.paper, section: f.section }))}
                 className="text-xs text-violet-600 hover:underline"
               >
                 Reset
               </button>
             </div>
 
-            {/* Topic */}
+            {/* Unit filter */}
             <div>
-              <p className="text-xs font-medium text-slate-700 mb-1.5">Topic</p>
-              <div className="space-y-1">
-                {allHistoryTopics.map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => setFilters((f) => ({ ...f, topic: t }))}
-                    className={`w-full text-left px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
-                      filters.topic === t
-                        ? "bg-violet-100 text-violet-800 font-semibold"
-                        : "text-slate-600 hover:bg-slate-100"
-                    }`}
-                  >
-                    {t}
-                  </button>
-                ))}
+              <p className="text-xs font-medium text-slate-700 mb-1.5">Unit</p>
+              <div className="space-y-0.5 max-h-64 overflow-y-auto">
+                <button
+                  onClick={() => setFilters((f) => ({ ...f, unit: "All" }))}
+                  className={`w-full text-left px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
+                    filters.unit === "All"
+                      ? "bg-violet-100 text-violet-800 font-semibold"
+                      : "text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  All Units
+                </button>
+                {unitsForPaper.map((u) => {
+                  const isSBQEligible =
+                    (SBQ_ELIGIBLE_PAPER_1 as readonly string[]).includes(u) ||
+                    (SBQ_ELIGIBLE_PAPER_2 as readonly string[]).includes(u);
+                  return (
+                    <button
+                      key={u}
+                      onClick={() => setFilters((f) => ({ ...f, unit: u }))}
+                      className={`w-full text-left px-2.5 py-1.5 text-xs rounded-lg transition-colors flex items-center justify-between gap-1 ${
+                        filters.unit === u
+                          ? "bg-violet-100 text-violet-800 font-semibold"
+                          : "text-slate-600 hover:bg-slate-100"
+                      }`}
+                    >
+                      <span className="truncate">{u}</span>
+                      {isSBQEligible && (
+                        <span className="text-[10px] font-bold text-amber-600 shrink-0">★</span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
-            </div>
-
-            {/* Level */}
-            <div>
-              <p className="text-xs font-medium text-slate-700 mb-1.5">Level</p>
-              <div className="space-y-1">
-                {(["All", ...allHistoryLevels] as string[]).map((l) => (
-                  <button
-                    key={l}
-                    onClick={() => setFilters((f) => ({ ...f, level: l }))}
-                    className={`w-full text-left px-2.5 py-1.5 text-xs rounded-lg transition-colors ${
-                      filters.level === l
-                        ? "bg-violet-100 text-violet-800 font-semibold"
-                        : "text-slate-600 hover:bg-slate-100"
-                    }`}
-                  >
-                    {l}
-                  </button>
-                ))}
-              </div>
+              <p className="text-[10px] text-slate-400 mt-1.5">★ = SBQ-eligible (starred unit)</p>
             </div>
 
             {/* Question type */}
             <div>
               <p className="text-xs font-medium text-slate-700 mb-1.5">Question Type</p>
-              <div className="space-y-1">
-                {(["All", ...allHistoryQuestionTypes] as string[]).map((t) => (
+              <div className="space-y-0.5">
+                {["All", "SBQ", "Essay"].map((t) => (
                   <button
                     key={t}
                     onClick={() => setFilters((f) => ({ ...f, questionType: t }))}
@@ -287,19 +297,19 @@ export default function HistoryPage() {
                         : "text-slate-600 hover:bg-slate-100"
                     }`}
                   >
-                    {t}
+                    {t === "All" ? "All Types" : t === "SBQ" ? "SBQ (Source-Based)" : "Essay (10 marks)"}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Keyword search */}
+            {/* Keyword */}
             <div>
               <p className="text-xs font-medium text-slate-700 mb-1.5">Keyword</p>
               <input
                 value={filters.keyword}
                 onChange={(e) => setFilters((f) => ({ ...f, keyword: e.target.value }))}
-                placeholder="e.g. Hitler, merger…"
+                placeholder="e.g. Hitler, communism…"
                 className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-300"
               />
             </div>
@@ -318,45 +328,61 @@ export default function HistoryPage() {
                   }`}
                 />
               </button>
-              <span className="text-xs text-slate-600">Show answer outlines</span>
+              <span className="text-xs text-slate-600">Show answer schemes</span>
             </div>
 
             {/* Generate question */}
             <div className="pt-3 border-t border-slate-100">
-              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Generate Question</p>
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-3">Generate Draft</p>
               <div className="space-y-2">
-                <select
-                  value={genTopic}
-                  onChange={(e) => setGenTopic(e.target.value)}
-                  className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-300"
-                >
-                  {allHistoryTopics.filter((t) => t !== "All").map((t) => (
-                    <option key={t}>{t}</option>
-                  ))}
-                </select>
-                <select
-                  value={genLevel}
-                  onChange={(e) => setGenLevel(e.target.value as HistoryLevel)}
-                  className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-300"
-                >
-                  {allHistoryLevels.map((l) => (
-                    <option key={l}>{l}</option>
-                  ))}
-                </select>
-                <select
-                  value={genType}
-                  onChange={(e) => setGenType(e.target.value as HistoryQuestionType)}
-                  className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-300"
-                >
-                  {allHistoryQuestionTypes.map((t) => (
-                    <option key={t}>{t}</option>
-                  ))}
-                </select>
+                <div>
+                  <p className="text-[10px] font-medium text-slate-500 uppercase mb-1">Paper</p>
+                  <select
+                    value={genPaper}
+                    onChange={(e) => {
+                      const p = e.target.value as HistoryPaper;
+                      setGenPaper(p);
+                      setGenUnit(p === "Paper 1" ? PAPER_1_UNITS[0] : PAPER_2_UNITS[0]);
+                    }}
+                    className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-300"
+                  >
+                    <option>Paper 1</option>
+                    <option>Paper 2</option>
+                  </select>
+                </div>
+                <div>
+                  <p className="text-[10px] font-medium text-slate-500 uppercase mb-1">Unit</p>
+                  <select
+                    value={genUnit}
+                    onChange={(e) => setGenUnit(e.target.value as HistoryUnit)}
+                    className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-300"
+                  >
+                    {genUnits.map((u) => (
+                      <option key={u}>{u}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <p className="text-[10px] font-medium text-slate-500 uppercase mb-1">Type</p>
+                  <select
+                    value={genType}
+                    onChange={(e) => setGenType(e.target.value as "Essay" | "SBQ")}
+                    className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-violet-300"
+                  >
+                    <option value="Essay">Essay (Section B)</option>
+                    <option
+                      value="SBQ"
+                      disabled={!(sbqEligibleUnits as readonly string[]).includes(genUnit)}
+                    >
+                      SBQ (Section A){!(sbqEligibleUnits as readonly string[]).includes(genUnit) ? " — not eligible" : ""}
+                    </option>
+                  </select>
+                </div>
                 <button
                   onClick={handleGenerate}
                   className="w-full py-2 text-xs font-semibold bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors"
                 >
-                  + Generate &amp; Add
+                  + Generate &amp; Add to Draft
                 </button>
               </div>
             </div>
@@ -364,18 +390,16 @@ export default function HistoryPage() {
 
           {/* Question list */}
           <div className="flex-1">
-            {inquiryResults !== null && (
-              <div className="mb-4 bg-violet-50 border border-violet-100 rounded-xl px-4 py-2.5 text-sm text-violet-800">
-                Showing results for: <strong>"{inquiry}"</strong>
-              </div>
-            )}
             {displayedQuestions.length === 0 ? (
               <div className="text-center py-16 text-slate-400">
                 <svg className="w-10 h-10 mx-auto mb-3 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <p className="text-sm font-medium">No questions match your filters</p>
-                <button onClick={() => setFilters(defaultHistoryFilters)} className="mt-2 text-sm text-violet-600 hover:underline">
+                <button
+                  onClick={() => setFilters((f) => ({ ...defaultHistoryFilters, paper: f.paper, section: f.section }))}
+                  className="mt-2 text-sm text-violet-600 hover:underline"
+                >
                   Reset filters
                 </button>
               </div>
@@ -399,7 +423,6 @@ export default function HistoryPage() {
       {/* ── Draft Paper tab ───────────────────────────────────────────── */}
       {tab === "draft" && (
         <div className="max-w-3xl">
-          {/* Paper title */}
           <div className="flex items-center gap-3 mb-6">
             <input
               value={paperTitle}
@@ -431,13 +454,11 @@ export default function HistoryPage() {
             <div className="space-y-4">
               {draftQuestions.map((q, idx) => (
                 <div key={q.id} className="flex gap-3 items-start">
-                  {/* Ordering controls */}
                   <div className="flex flex-col gap-1 pt-5 shrink-0">
                     <button
                       onClick={() => moveUp(idx)}
                       disabled={idx === 0}
                       className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:bg-slate-100 disabled:opacity-20 transition-colors"
-                      title="Move up"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
@@ -448,7 +469,6 @@ export default function HistoryPage() {
                       onClick={() => moveDown(idx)}
                       disabled={idx === draftQuestions.length - 1}
                       className="w-6 h-6 flex items-center justify-center rounded text-slate-400 hover:bg-slate-100 disabled:opacity-20 transition-colors"
-                      title="Move down"
                     >
                       <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -528,22 +548,22 @@ export default function HistoryPage() {
 
               {answerGuides.map((guide, qIdx) => (
                 <div key={guide.questionId} className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                  {/* Question header */}
                   <div className="bg-slate-50 border-b border-slate-200 px-5 py-3 flex items-start justify-between gap-3">
                     <div>
                       <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-0.5">Question {qIdx + 1}</p>
-                      <p className="text-sm text-slate-700 font-medium line-clamp-2">{guide.questionText.slice(0, 120)}{guide.questionText.length > 120 ? "…" : ""}</p>
+                      <p className="text-sm text-slate-700 font-medium line-clamp-2">
+                        {guide.questionText.slice(0, 120)}{guide.questionText.length > 120 ? "…" : ""}
+                      </p>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <span className="text-xs font-bold text-slate-700 bg-white border border-slate-200 px-2 py-0.5 rounded-full">
                         {guide.totalMarks}m
                       </span>
-                      <span className="text-xs text-slate-500">{guide.level}</span>
+                      <span className="text-xs text-slate-500">{guide.paper}</span>
                     </div>
                   </div>
 
                   <div className="p-5 space-y-4">
-                    {/* Mark scheme entries */}
                     {guide.markScheme.map((entry, eIdx) => (
                       <div key={eIdx} className="space-y-2">
                         {guide.markScheme.length > 1 && (
@@ -582,7 +602,6 @@ export default function HistoryPage() {
                       </div>
                     ))}
 
-                    {/* General advice */}
                     <div className="bg-amber-50 border border-amber-100 rounded-lg p-3">
                       <p className="text-xs font-semibold text-amber-800 mb-1">Marking Advice</p>
                       <p className="text-xs text-amber-700 leading-relaxed">{guide.generalAdvice}</p>
@@ -592,7 +611,9 @@ export default function HistoryPage() {
               ))}
 
               <div className="text-center pt-4 pb-2">
-                <p className="text-xs text-slate-400">End of Answer Guide · {answerGuides.length} question{answerGuides.length !== 1 ? "s" : ""} · {answerGuides.reduce((s, g) => s + g.totalMarks, 0)} marks total</p>
+                <p className="text-xs text-slate-400">
+                  End of Answer Guide · {answerGuides.length} question{answerGuides.length !== 1 ? "s" : ""} · {answerGuides.reduce((s, g) => s + g.totalMarks, 0)} marks total
+                </p>
               </div>
             </div>
           )}

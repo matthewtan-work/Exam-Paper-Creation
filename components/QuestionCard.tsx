@@ -10,9 +10,9 @@ interface Props {
 }
 
 const difficultyColor: Record<string, string> = {
-  Easy: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  Medium: "bg-amber-50 text-amber-700 border-amber-200",
-  Hard: "bg-red-50 text-red-700 border-red-200",
+  "Easy": "bg-emerald-50 text-emerald-700 border-emerald-200",
+  "Medium": "bg-amber-50 text-amber-700 border-amber-200",
+  "Hard": "bg-red-50 text-red-700 border-red-200",
 };
 
 const typeColor: Record<string, string> = {
@@ -20,6 +20,7 @@ const typeColor: Record<string, string> = {
   MCQ: "bg-purple-50 text-purple-700",
   "Free Response": "bg-sky-50 text-sky-700",
   "Data-Based": "bg-teal-50 text-teal-700",
+  Practical: "bg-orange-50 text-orange-700",
 };
 
 export default function QuestionCard({ question, onAddToPaper, onInspect, isAdded }: Props) {
@@ -35,11 +36,11 @@ export default function QuestionCard({ question, onAddToPaper, onInspect, isAdde
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-wrap gap-1.5">
           <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
-            {question.topic}
+            {question.officialTopic}
           </span>
           <span
             className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
-              difficultyColor[question.difficulty]
+              difficultyColor[question.difficulty] ?? "bg-slate-100 text-slate-600 border-slate-200"
             }`}
           >
             {question.difficulty}
@@ -77,7 +78,7 @@ export default function QuestionCard({ question, onAddToPaper, onInspect, isAdde
       {/* Footer */}
       <div className="flex items-center justify-between pt-1 mt-auto border-t border-slate-100">
         <span className="text-xs text-slate-400">
-          {question.sourcePaper} · {question.sourceYear}
+          {question.sourceLabel} · {question.sourceYear}
         </span>
         <button
           onClick={(e) => {

@@ -4,17 +4,9 @@ const products = [
   {
     href: "/chemistry",
     label: "Chemistry Question Search + Paper Creation",
-    tagline: "Product A",
     description: "Search for inspiration from questions for all schools.",
     cta: "Open Chemistry Tools",
     accent: "indigo",
-    features: [
-      "Keyword & filter search",
-      "AI-assisted query bar",
-      "Inline paper editor",
-      "Raw text formatter",
-      "Mock question generator",
-    ],
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
@@ -24,17 +16,9 @@ const products = [
   {
     href: "/history",
     label: "History Question Search + Paper Creation",
-    tagline: "Product B",
     description: "Search for inspiration from questions for all schools.",
     cta: "Open History Tools",
     accent: "violet",
-    features: [
-      "Question bank — O & A Level",
-      "Inquiry-based retrieval",
-      "Source-Based Question support",
-      "AI question generation",
-      "Answer guide with mark schemes",
-    ],
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.966 8.966 0 00-6 2.292m0-14.25v14.25" />
@@ -70,8 +54,8 @@ export default function HomePage() {
             key={product.href}
             className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-7 flex flex-col"
           >
-            {/* Icon + tag */}
-            <div className="flex items-start justify-between mb-4">
+            {/* Icon */}
+            <div className="mb-5">
               <div
                 className={`w-11 h-11 rounded-xl flex items-center justify-center ${
                   product.accent === "indigo"
@@ -81,53 +65,26 @@ export default function HomePage() {
               >
                 {product.icon}
               </div>
-              <span
-                className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                  product.accent === "indigo"
-                    ? "bg-indigo-50 text-indigo-600"
-                    : "bg-violet-50 text-violet-600"
-                }`}
-              >
-                {product.tagline}
-              </span>
             </div>
 
             <h2 className="text-lg font-bold text-slate-900 mb-2">{product.label}</h2>
-            <p className="text-sm text-slate-500 leading-relaxed mb-5">{product.description}</p>
+            <p className="text-sm text-slate-500 leading-relaxed flex-1">{product.description}</p>
 
-            {/* Feature list */}
-            <ul className="space-y-1.5 mb-7 flex-1">
-              {product.features.map((f) => (
-                <li key={f} className="flex items-center gap-2 text-sm text-slate-600">
-                  <svg
-                    className={`w-4 h-4 shrink-0 ${
-                      product.accent === "indigo" ? "text-indigo-400" : "text-violet-400"
-                    }`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2.5}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                  {f}
-                </li>
-              ))}
-            </ul>
-
-            <Link
-              href={product.href}
-              className={`inline-flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold transition-colors ${
-                product.accent === "indigo"
-                  ? "bg-indigo-600 hover:bg-indigo-700 text-white"
-                  : "bg-violet-600 hover:bg-violet-700 text-white"
-              }`}
-            >
-              {product.cta}
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
+            <div className="mt-7">
+              <Link
+                href={product.href}
+                className={`inline-flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                  product.accent === "indigo"
+                    ? "bg-indigo-600 hover:bg-indigo-700 text-white"
+                    : "bg-violet-600 hover:bg-violet-700 text-white"
+                }`}
+              >
+                {product.cta}
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
+            </div>
           </div>
         ))}
       </div>

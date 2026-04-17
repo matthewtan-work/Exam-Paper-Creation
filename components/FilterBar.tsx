@@ -1,6 +1,12 @@
 "use client";
 
-import { SearchFilters, allTopics, allQuestionTypes, allDifficulties } from "@/lib/chemistrySearch";
+import {
+  SearchFilters,
+  allOfficialTopics,
+  allQuestionTypes,
+  allDifficulties,
+  allPapers,
+} from "@/lib/chemistrySearch";
 
 interface Props {
   filters: SearchFilters;
@@ -14,6 +20,8 @@ const marksOptions = [
   { value: "3-4", label: "3–4 marks" },
   { value: "5+", label: "5+ marks" },
 ];
+
+const paper2Sections = ["All", "Section A", "Section B"];
 
 function Select({
   label,
@@ -46,7 +54,9 @@ function Select({
 
 export default function FilterBar({ filters, onChange, onReset }: Props) {
   const hasActiveFilters =
-    filters.topic !== "All" ||
+    filters.paper !== "All" ||
+    filters.section !== "All" ||
+    filters.officialTopic !== "All" ||
     filters.questionType !== "All" ||
     filters.difficulty !== "All" ||
     filters.marks !== "any";
@@ -54,10 +64,24 @@ export default function FilterBar({ filters, onChange, onReset }: Props) {
   return (
     <div className="flex flex-wrap items-end gap-4">
       <Select
+        label="Paper"
+        value={filters.paper}
+        options={allPapers}
+        onChange={(v) => onChange({ ...filters, paper: v, section: "All" })}
+      />
+      {filters.paper === "Paper 2" && (
+        <Select
+          label="Section"
+          value={filters.section}
+          options={paper2Sections}
+          onChange={(v) => onChange({ ...filters, section: v })}
+        />
+      )}
+      <Select
         label="Topic"
-        value={filters.topic}
-        options={allTopics}
-        onChange={(v) => onChange({ ...filters, topic: v })}
+        value={filters.officialTopic}
+        options={allOfficialTopics}
+        onChange={(v) => onChange({ ...filters, officialTopic: v })}
       />
       <Select
         label="Type"

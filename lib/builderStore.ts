@@ -99,8 +99,8 @@ export function questionToPaperQuestion(q: ChemistryQuestion): PaperQuestion {
     sourceId: q.id,
     text: q.text,
     marks: q.marks,
-    topic: q.topic,
-    sourceInfo: `${q.sourcePaper} (${q.sourceYear})`,
+    topic: q.officialTopic,
+    sourceInfo: `${q.sourceLabel} (${q.sourceYear})`,
   };
 }
 

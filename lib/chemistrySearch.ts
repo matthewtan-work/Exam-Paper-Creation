@@ -3,13 +3,18 @@ import {
   chemistryQuestions,
   Difficulty,
   QuestionType,
-  Level,
 } from "@/data/chemistryQuestions";
+import {
+  OFFICIAL_CHEM_TOPICS,
+  OfficialChemTopic,
+  CHEM_PAPERS,
+} from "@/data/syllabusChemistry";
 
 export interface SearchFilters {
   query: string;
-  level: string;
-  topic: string;
+  paper: string;         // "All" | "Paper 1" | "Paper 2" | "Paper 3"
+  section: string;       // "All" | "Section A" | "Section B"
+  officialTopic: string; // "All" | one of OFFICIAL_CHEM_TOPICS
   questionType: string;
   difficulty: string;
   marks: string; // "any" | "1-2" | "3-4" | "5+"
@@ -17,58 +22,62 @@ export interface SearchFilters {
 
 export const defaultFilters: SearchFilters = {
   query: "",
-  level: "All",
-  topic: "All",
+  paper: "All",
+  section: "All",
+  officialTopic: "All",
   questionType: "All",
   difficulty: "All",
   marks: "any",
 };
 
-export const allLevels: string[] = [
-  "All",
-  "O Level (Pure Chemistry)",
-  "O Level (Combined Chemistry)",
-  "A Level (H2 Chemistry)",
-  "A Level (H1 Chemistry)",
-];
+export const allPapers: string[] = ["All", ...CHEM_PAPERS];
 
-export const allTopics = [
-  "All",
-  ...Array.from(new Set(chemistryQuestions.map((q) => q.topic))).sort(),
-];
+export const allOfficialTopics: string[] = ["All", ...OFFICIAL_CHEM_TOPICS];
 
 export const allQuestionTypes: string[] = [
   "All",
-  "Structured",
   "MCQ",
+  "Structured",
   "Free Response",
   "Data-Based",
+  "Practical",
 ];
 
-export const allDifficulties: string[] = ["All", "Easy", "Medium", "Hard"];
+export const allDifficulties: string[] = [
+  "All",
+  "Easy",
+  "Medium",
+  "Hard",
+];
 
 export function searchQuestions(filters: SearchFilters): ChemistryQuestion[] {
-  let results = [...chemistryQuestions];
+  // Exclude any questions flagged for remapping
+  let results = chemistryQuestions.filter(
+    (q) => q.reviewStatus !== "needs_remapping"
+  );
 
-  if (filters.level !== "All") {
-    results = results.filter((q) => q.level === filters.level);
+  if (filters.paper !== "All") {
+    results = results.filter((q) => q.paper === filters.paper);
   }
 
-  // Keyword search — checks question text, topic, subtopic, tags
+  if (filters.section !== "All") {
+    results = results.filter((q) => q.section === filters.section);
+  }
+
+  if (filters.officialTopic !== "All") {
+    results = results.filter((q) => q.officialTopic === filters.officialTopic);
+  }
+
   if (filters.query.trim()) {
-    const q = filters.query.toLowerCase();
+    const kw = filters.query.toLowerCase();
     results = results.filter(
       (item) =>
-        item.text.toLowerCase().includes(q) ||
-        item.topic.toLowerCase().includes(q) ||
-        item.subtopic.toLowerCase().includes(q) ||
-        item.tags.some((t) => t.toLowerCase().includes(q)) ||
-        item.answerOutline.toLowerCase().includes(q)
+        item.text.toLowerCase().includes(kw) ||
+        item.officialTopic.toLowerCase().includes(kw) ||
+        item.subtopic.toLowerCase().includes(kw) ||
+        item.tags.some((t) => t.toLowerCase().includes(kw)) ||
+        item.answerScheme.toLowerCase().includes(kw)
     );
-  }
-
-  if (filters.topic !== "All") {
-    results = results.filter((q) => q.topic === filters.topic);
   }
 
   if (filters.questionType !== "All") {
@@ -92,52 +101,30 @@ export function searchQuestions(filters: SearchFilters): ChemistryQuestion[] {
 }
 
 /**
- * Interprets a natural-language prompt and maps it to filters.
- * This is a mock of AI-assisted search — no real LLM involved.
+ * Maps natural-language prompt keywords to structured filters.
+ * No LLM involved — pure string matching.
  */
 export function parseNaturalQuery(prompt: string): SearchFilters {
   const lower = prompt.toLowerCase();
 
-  const topicKeywords: Record<string, string> = {
-    "covalent bond": "Covalent Bonding",
-    covalent: "Covalent Bonding",
-    ionic: "Ionic Bonding",
-    mole: "Mole Concept",
-    molar: "Mole Concept",
-    stoichiometry: "Mole Concept",
-    "acid": "Acids and Bases",
-    "base": "Acids and Bases",
-    "ph": "Acids and Bases",
-    neutrali: "Acids and Bases",
-    redox: "Redox",
-    oxidation: "Redox",
-    reduction: "Redox",
-    electrolysis: "Electrolysis",
-    electrode: "Electrolysis",
-    organic: "Organic Chemistry",
-    alkane: "Organic Chemistry",
-    alkene: "Organic Chemistry",
-    polymer: "Organic Chemistry",
-    ethanol: "Organic Chemistry",
-    periodic: "Periodic Table",
-    "group 1": "Periodic Table",
-    "group 7": "Periodic Table",
-    halogen: "Periodic Table",
-    "transition metal": "Periodic Table",
-    metal: "Metals",
-    reactivity: "Metals",
-    rust: "Metals",
-    corrosion: "Metals",
-    energy: "Energy Changes",
-    enthalpy: "Energy Changes",
-    "bond energy": "Energy Changes",
-    exothermic: "Energy Changes",
-    endothermic: "Energy Changes",
-  };
+  const topicKeywords: Array<[string[], OfficialChemTopic]> = [
+    [["covalent", "ionic bond", "metallic bond", "bonding", "dot and cross", "giant structure", "simple molecular"], "Chemical Bonding and Structure"],
+    [["mole", "molar mass", "stoichiometry", "empirical formula", "concentration", "limiting reagent", "yield"], "Chemical Calculations"],
+    [["acid", "base", "ph", "neutrali", "titration", "alkali", "buffer", "strong acid", "weak acid"], "Acid-Base Chemistry"],
+    [["qualitative", "flame test", "precipitate", "identify ion", "test for gas", "anion", "cation"], "Qualitative Analysis"],
+    [["redox", "oxidation", "reduction", "electrolysis", "electrode", "corrosion", "rust", "half equation"], "Redox Chemistry"],
+    [["periodic", "group 1", "group 7", "halogen", "transition metal", "reactivity series", "metal extraction", "noble gas"], "Patterns in the Periodic Table"],
+    [["energy", "enthalpy", "exothermic", "endothermic", "bond energy", "activation energy chart"], "Chemical Energetics"],
+    [["rate", "catalyst", "concentration effect", "surface area", "activation energy"], "Rate of Reactions"],
+    [["organic", "alkane", "alkene", "polymer", "ethanol", "hydrocarbon", "esterification", "addition reaction"], "Organic Chemistry"],
+    [["air quality", "atmosphere", "greenhouse", "pollution", "carbon dioxide effect", "acid rain", "catalytic converter"], "Maintaining Air Quality"],
+    [["particulate", "state of matter", "diffusion", "kinetic theory", "atoms and molecules"], "The Particulate Nature of Matter"],
+    [["experiment", "practical", "planning", "safety", "apparatus", "hazard"], "Experimental Chemistry"],
+  ];
 
-  let detectedTopic = "All";
-  for (const [keyword, topic] of Object.entries(topicKeywords)) {
-    if (lower.includes(keyword)) {
+  let detectedTopic: string = "All";
+  for (const [keywords, topic] of topicKeywords) {
+    if (keywords.some((kw) => lower.includes(kw))) {
       detectedTopic = topic;
       break;
     }
@@ -151,6 +138,7 @@ export function parseNaturalQuery(prompt: string): SearchFilters {
     "open ended": "Free Response",
     "data-based": "Data-Based",
     "data based": "Data-Based",
+    "practical": "Practical",
   };
   let detectedType = "All";
   for (const [kw, qt] of Object.entries(typeKeywords)) {
@@ -161,14 +149,17 @@ export function parseNaturalQuery(prompt: string): SearchFilters {
   }
 
   const difficultyKeywords: Record<string, Difficulty> = {
-    easy: "Easy",
-    simple: "Easy",
-    basic: "Easy",
-    hard: "Hard",
-    difficult: "Hard",
-    challenging: "Hard",
-    medium: "Medium",
-    moderate: "Medium",
+    "easy": "Easy",
+    "simple": "Easy",
+    "basic": "Easy",
+    "low demand": "Easy",
+    "hard": "Hard",
+    "difficult": "Hard",
+    "challenging": "Hard",
+    "high demand": "Hard",
+    "medium": "Medium",
+    "moderate": "Medium",
+    "medium demand": "Medium",
   };
   let detectedDifficulty = "All";
   for (const [kw, diff] of Object.entries(difficultyKeywords)) {
@@ -178,10 +169,16 @@ export function parseNaturalQuery(prompt: string): SearchFilters {
     }
   }
 
+  let detectedPaper = "All";
+  if (lower.includes("paper 1") || lower.includes("mcq paper")) detectedPaper = "Paper 1";
+  else if (lower.includes("paper 2") || lower.includes("structured paper")) detectedPaper = "Paper 2";
+  else if (lower.includes("paper 3") || lower.includes("practical paper")) detectedPaper = "Paper 3";
+
   return {
     query: "",
-    level: "All",
-    topic: detectedTopic,
+    paper: detectedPaper,
+    section: "All",
+    officialTopic: detectedTopic,
     questionType: detectedType,
     difficulty: detectedDifficulty,
     marks: "any",

@@ -11,13 +11,12 @@ interface Props {
 }
 
 const difficultyColor: Record<string, string> = {
-  Easy: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  Medium: "bg-amber-50 text-amber-700 border-amber-200",
-  Hard: "bg-red-50 text-red-700 border-red-200",
+  "Easy": "bg-emerald-50 text-emerald-700 border-emerald-200",
+  "Medium": "bg-amber-50 text-amber-700 border-amber-200",
+  "Hard": "bg-red-50 text-red-700 border-red-200",
 };
 
 export default function QuestionDrawer({ question, onClose, onAddToPaper, isAdded }: Props) {
-  // Close on Escape key
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -56,25 +55,31 @@ export default function QuestionDrawer({ question, onClose, onAddToPaper, isAdde
           {/* Metadata chips */}
           <div className="flex flex-wrap gap-2">
             <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
-              {question.topic}
+              {question.officialTopic}
             </span>
             <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
               {question.subtopic}
             </span>
-            <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${difficultyColor[question.difficulty]}`}>
+            <span className={`text-xs font-medium px-2.5 py-1 rounded-full border ${difficultyColor[question.difficulty] ?? "bg-slate-100 text-slate-700 border-slate-200"}`}>
               {question.difficulty}
             </span>
             <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700">
               {question.questionType}
             </span>
             <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
+              {question.paper}{question.section ? ` · ${question.section}` : ""}
+            </span>
+            <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-slate-100 text-slate-700">
               {question.marks} {question.marks === 1 ? "mark" : "marks"}
+            </span>
+            <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-blue-50 text-blue-700">
+              {question.assessmentObjective}
             </span>
           </div>
 
           {/* Source */}
           <div className="text-xs text-slate-400 font-medium">
-            {question.sourcePaper} · {question.sourceYear}
+            {question.sourceLabel} · {question.sourceYear}
           </div>
 
           {/* Full question */}
@@ -87,13 +92,13 @@ export default function QuestionDrawer({ question, onClose, onAddToPaper, isAdde
             </div>
           </div>
 
-          {/* Answer outline */}
+          {/* Answer scheme */}
           <div>
             <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
-              Answer Outline / Mark Scheme
+              Answer Scheme / Mark Scheme
             </h3>
             <div className="bg-amber-50 rounded-lg p-4 text-sm text-amber-900 leading-relaxed whitespace-pre-wrap border border-amber-100">
-              {question.answerOutline}
+              {question.answerScheme}
             </div>
           </div>
 
