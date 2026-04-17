@@ -92,6 +92,23 @@ export default function QuestionDrawer({ question, onClose, onAddToPaper, isAdde
             </div>
           </div>
 
+          {/* Source page image */}
+          {question.sourceImage && (
+            <div>
+              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
+                Source Page
+              </h3>
+              <a href={question.sourceImage} target="_blank" rel="noreferrer">
+                <img
+                  src={question.sourceImage}
+                  alt="Source page"
+                  className="w-full rounded-lg border border-slate-200 hover:opacity-90 transition-opacity cursor-zoom-in"
+                />
+              </a>
+              <p className="text-xs text-slate-400 mt-1">Click to open full size</p>
+            </div>
+          )}
+
           {/* Answer scheme */}
           <div>
             <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">
